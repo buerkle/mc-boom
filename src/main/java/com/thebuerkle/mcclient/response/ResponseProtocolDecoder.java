@@ -55,9 +55,11 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(SpawnMobResponse.class);
         register(SpawnNamedEntityResponse.class);
         register(SpawnObjectResponse.class);
+        register(SpawnPaintingResponse.class);
         register(SpawnPositionResponse.class);
         register(TimeUpdateResponse.class);
         register(UpdateHealthResponse.class);
+        register(UpdateSignResponse.class);
     }
 
     private static void register(Class<? extends Response> response) {
