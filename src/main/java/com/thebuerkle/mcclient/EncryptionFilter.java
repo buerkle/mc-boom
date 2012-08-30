@@ -92,7 +92,9 @@ public class EncryptionFilter extends WriteRequestFilter {
             return result;
         }
         catch (Exception e) {
-            System.err.println("---------- Input: " + size + ": " + in.position() + ": " + in.limit());
+            System.err.println("---------- Input: " + size
+                               + " remaining: " + r
+                               + ": " + in.position() + ": " + in.limit());
             System.err.println("---------- Output: " + result.position() + ": " + result.limit());
             throw e;
         }

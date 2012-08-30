@@ -1,6 +1,7 @@
 package com.thebuerkle.mcclient;
 
 import com.thebuerkle.mcclient.model.IntVec3;
+import com.thebuerkle.mcclient.model.Player;
 import com.thebuerkle.mcclient.model.Vec3;
 import com.thebuerkle.mcclient.request.*;
 import com.thebuerkle.mcclient.response.*;
@@ -30,6 +31,8 @@ public class Client {
 
     public static final String SESSION_KEY = Client.class.getName();
 
+    private static final int TICK_MS = 50;
+
     private final String _host;
     private final int _port;
     private final String _user;
@@ -47,11 +50,9 @@ public class Client {
         return(Client) session.getAttribute(SESSION_KEY);
     }
 
-    private volatile Vec3 _position;
-    private volatile double _stance;
-    private volatile boolean _onGround;
+    private final AtomicBoolean _running = new AtomicBoolean();
 
-    private final AtomicBoolean _started = new AtomicBoolean();
+    private final Player _player = new Player();
 
     public Client(ScheduledExecutorService executor, String user, String host, int port) {
         _executor = executor;
@@ -116,36 +117,20 @@ public class Client {
             _session.write(new KeepAliveRequest(((KeepAliveResponse) response).id));
         }
         else if (PlayerPositionAndLookResponse.ID == id) {
-            PlayerPositionAndLookResponse rsp = (PlayerPositionAndLookResponse) response;
-            _position = rsp.position;
-            _stance = rsp.stance;
-            _onGround = rsp.onGround;
+            final PlayerPositionAndLookResponse rsp = (PlayerPositionAndLookResponse) response;
 
-            System.err.println("Position: " + _position);
-            System.err.println("Stance: " + _stance);
-            PlayerRequest pr = new PlayerRequest(true);
-            _session.write(pr);
+            if (_running.compareAndSet(false, true)) {
+                _executor.execute(new Runnable() {
+                                      public void run() {
+                                          System.err.println("---- set position: " + rsp.position
+                                               + ": " + rsp.onGround);
+                                          _player.setPosition(rsp.position);
 
-            PlayerPositionRequest req =
-                new PlayerPositionRequest(_position, _stance, true);
-
-            _session.write(req);
-
-            if (_started.compareAndSet(false, true)) {
-                _executor.scheduleAtFixedRate(new Runnable() {
-                                                  public void run() {
-                                                      double x = (_random.nextDouble()  - 0.5);
-                                                      double z = (_random.nextDouble() - 0.5);
-
-                                                      _position = new Vec3(_position.x+x, _position.y, _position.z+z);
-
-/*                                                    System.err.println(_position);*/
-                                                      PlayerPositionRequest req =
-                                                          new PlayerPositionRequest(_position, _stance, true);
-
-                                                      _session.write(req);
-                                                  }
-                                              }, 100, 100, TimeUnit.MILLISECONDS);
+                                          _executor.schedule(new TickRunnable(),
+                                                             TICK_MS,
+                                                             TimeUnit.MILLISECONDS);
+                                      }
+                                  });
             }
 
         }
@@ -155,6 +140,44 @@ public class Client {
     }
 
     public void disconnect() {
+        _running.set(false);
+    }
+
+    private class TickRunnable implements Runnable {
+        @Override()
+        public void run() {
+            Vec3 position = _player.getPosition();
+            double velocityY = _player.getVelocityY();
+            double y = position.y;
+            double x = position.x;
+            double z = position.z;
+
+            if (_player.isOnGround()) {
+                position.x += _random.nextDouble() - 0.5;
+                position.z += _random.nextDouble() - 0.5;
+            }
+            else {
+                velocityY -= 0.08;
+                velocityY *= 0.98;
+
+                y = position.y + velocityY;
+
+                // Works only for flat world until chunk data is parsed
+                if (y < 4.0) {
+                    y = 4.0;
+                    velocityY = 0.0;
+                    _player.setOnGround(true);
+                }
+                _player.setVelocityY(velocityY);
+                _player.setPosition(position.x, y, position.z);
+            }
+
+            _session.write(new PlayerPositionRequest(position, position.y + Player.HEIGHT, _player.isOnGround()));
+
+            if (_running.get()) {
+                _executor.schedule(this, TICK_MS, TimeUnit.MILLISECONDS);
+            }
+        }
     }
 }
 
