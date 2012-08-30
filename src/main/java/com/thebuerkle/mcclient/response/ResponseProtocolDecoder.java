@@ -52,6 +52,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(SetSlotResponse.class);
         register(SetWindowItemsResponse.class);
         register(SpawnDroppedItemResponse.class);
+        register(SpawnExperienceOrb.class);
         register(SpawnMobResponse.class);
         register(SpawnNamedEntityResponse.class);
         register(SpawnObjectResponse.class);
