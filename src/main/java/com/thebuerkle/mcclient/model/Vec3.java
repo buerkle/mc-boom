@@ -7,6 +7,10 @@ public class Vec3 {
     public double y;
     public double z;
 
+    public Vec3() {
+        this(0.0, 0.0, 0.0);
+    }
+
     public Vec3(IntVec3 o) {
         this(o.x, o.y, o.z);
     }
