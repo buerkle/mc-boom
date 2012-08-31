@@ -40,6 +40,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(EntityStatusResponse.class);
         register(EntityTeleportResponse.class);
         register(EntityVelocityResponse.class);
+        register(IncrementStatisticResponse.class);
         register(KeepAliveResponse.class);
         register(LoginRequestResponse.class);
         register(MultiBlockChangeResponse.class);
@@ -61,6 +62,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(TimeUpdateResponse.class);
         register(UpdateHealthResponse.class);
         register(UpdateSignResponse.class);
+        register(UpdateTileEntityResponse.class);
     }
 
     private static void register(Class<? extends Response> response) {
