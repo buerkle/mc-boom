@@ -92,7 +92,7 @@ public class Client {
         }
 
         session = future.getSession();
-        session.getConfig().setUseReadOperation(true);
+        session.getConfig().setUseReadOperation(false);
         session.setAttribute(SESSION_KEY, this);
         session.write(new HandshakeRequest(39, _user, _host, _port));
 
