@@ -32,6 +32,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(EncryptionKeyRequestResponse.class);
         register(EncryptionKeyResponseResponse.class);
         register(EntityEquipmentResponse.class);
+        register(EntityResponse.class);
         register(EntityHeadLookResponse.class);
         register(EntityLookAndRelativeMoveResponse.class);
         register(EntityLookResponse.class);
@@ -40,6 +41,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(EntityStatusResponse.class);
         register(EntityTeleportResponse.class);
         register(EntityVelocityResponse.class);
+        register(ExplosionResponse.class);
         register(IncrementStatisticResponse.class);
         register(KeepAliveResponse.class);
         register(LoginRequestResponse.class);

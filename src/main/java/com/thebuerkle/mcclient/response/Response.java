@@ -43,6 +43,13 @@ public abstract class Response {
         return v;
     }
 
+    protected static byte[] mc_bytecoordarray(IoBuffer in) {
+        int len = in.getInt();
+        byte[] v = new byte[len*3];
+        in.get(v);
+        return v;
+    }
+
     protected static double mc_double(IoBuffer in) {
         return in.getDouble();
     }
