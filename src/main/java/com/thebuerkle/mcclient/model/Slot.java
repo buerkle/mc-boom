@@ -8,20 +8,24 @@ public class Slot {
     public static int size(IoBuffer in, int position) {
         int remaining = in.limit() - position;
 
-        if (remaining >= 2) {
-            int id = in.getShort(position);
-
-            if (id == -1) {
-                return 2;
-            }
-            else if (remaining >= 7) {
-                int len = in.getShort(position+5);
-                if (len >= remaining - 7) {
-                    return 7 + len;
-                }
-            }
+        if (remaining < 2) {
+            return -1; // no room for id
         }
-        return -1;
+
+        int id = in.getShort(position);
+        if (id == -1) {
+            return 2;
+        }
+
+        if (remaining < 7) {
+            return -1; // ID, count, damage, len
+        }
+
+        int len = in.getShort(position+5);
+        if (remaining < 7 + len) {
+            return -1;
+        }
+        return 7 + len;
     }
 
     public static Slot decode(IoBuffer in) {
@@ -32,22 +36,25 @@ public class Slot {
         }
 
         int itemCount = in.get();
-        int damage = in.getShort();
-        byte[] data = new byte[in.getShort()];
-
-        in.get(data);
+        short damage = in.getShort();
+        int len = in.getShort();
+        byte[] data = null;
+        if (len >= 0) {
+            data = new byte[len];
+            in.get(data);
+        }
 
         return new Slot(id, itemCount, damage, data);
     }
 
-    private static final Slot EMPTY_SLOT = new Slot(-1, -1, -1, new byte[0]);
+    private static final Slot EMPTY_SLOT = new Slot(-1, 0, (short) -1, new byte[0]);
 
     private int _id;
     private int _itemCount;
-    private int _damage;
+    private short _damage;
     private byte[] _data;
 
-    public Slot(int id, int itemCount, int damage, byte[] data) {
+    public Slot(int id, int itemCount, short damage, byte[] data) {
         _id = id;
         _itemCount = itemCount;
         _damage = damage;
@@ -59,7 +66,7 @@ public class Slot {
             add("ID", _id).
             add("Item count", _itemCount).
             add("Damage", _damage).
-            add("Data length", _data.length).
+            add("Data length", (_data == null ? 0 : _data.length)).
             toString();
     }
 }
