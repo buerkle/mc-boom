@@ -52,7 +52,7 @@ public class Client {
 
     private final AtomicBoolean _running = new AtomicBoolean();
 
-    private final Player _player = new Player();
+    private Player _player;
 
     public Client(ScheduledExecutorService executor, String user, String host, int port) {
         _executor = executor;
@@ -60,6 +60,10 @@ public class Client {
         _host = host;
         _port = port;
         _secret = secret();
+    }
+
+    public String getUser() {
+        return _user;
     }
 
     private static SecretKey secret() {
@@ -116,19 +120,39 @@ public class Client {
         else if (KeepAliveResponse.ID == id) {
             _session.write(new KeepAliveRequest(((KeepAliveResponse) response).id));
         }
+        else if (LoginRequestResponse.ID == id) {
+            final LoginRequestResponse login = (LoginRequestResponse) response;
+
+            _executor.submit(new Runnable() {
+                                 public void run() {
+                                     _player = new Player(login.eid);
+                                     System.err.println("Login: " + login.eid);
+                                 }
+                             });
+        }
         else if (PlayerPositionAndLookResponse.ID == id) {
             final PlayerPositionAndLookResponse rsp = (PlayerPositionAndLookResponse) response;
+
+            System.err.println("Player position and look: " + rsp);
 
             if (_running.compareAndSet(false, true)) {
                 _executor.execute(new Runnable() {
                                       public void run() {
-                                          System.err.println("---- set position: " + rsp.position
-                                               + ": " + rsp.onGround);
+/*                                        System.err.println("---- set position: " + rsp.position*/
+/*                                             + ": " + rsp.onGround);                           */
                                           _player.setPosition(rsp.position);
 
                                           _executor.schedule(new TickRunnable(),
                                                              TICK_MS,
                                                              TimeUnit.MILLISECONDS);
+                                      }
+                                  });
+            }
+            else {
+                _executor.execute(new Runnable() {
+                                      public void run() {
+                                          _player.setPosition(rsp.position);
+                                          _session.write(new PlayerPositionRequest(rsp.position, rsp.position.y + Player.HEIGHT, _player.isOnGround()));
                                       }
                                   });
             }

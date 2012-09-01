@@ -24,6 +24,11 @@ public class ClientHandler extends IoHandlerAdapter {
 
     }
 
+    public void sessionClosed(IoSession session) throws Exception {
+        Client client = Client.get(session);
+        System.err.println("Session closed: " + client.getUser());
+    }
+
     @Override()
     public void messageReceived(IoSession session, Object msg) {
         Client client = Client.get(session);

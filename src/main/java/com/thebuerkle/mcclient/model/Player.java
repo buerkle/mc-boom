@@ -4,10 +4,20 @@ public class Player {
 
     public static final double HEIGHT = 1.62;
 
+    private final int _id;
+
     private Vec3 _position;
     private Vec3 _velocity = new Vec3();
     private boolean _onGround;
     private float _stance;
+
+    public Player(int id) {
+        _id = id;
+    }
+
+    public int getId() {
+        return _id;
+    }
 
     public void setOnGround(boolean v) {
         _onGround = v;
