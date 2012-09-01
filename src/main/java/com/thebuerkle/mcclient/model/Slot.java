@@ -22,6 +22,9 @@ public class Slot {
         }
 
         int len = in.getShort(position+5);
+        if (len == -1) {
+            return 7;
+        }
         if (remaining < 7 + len) {
             return -1;
         }
