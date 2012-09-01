@@ -59,6 +59,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(SpawnObjectResponse.class);
         register(SpawnPaintingResponse.class);
         register(SpawnPositionResponse.class);
+        register(ThunderboltResponse.class);
         register(TimeUpdateResponse.class);
         register(UpdateHealthResponse.class);
         register(UpdateSignResponse.class);
