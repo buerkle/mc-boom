@@ -82,7 +82,6 @@ public enum DataType {
                     newpos += size;
                 }
             }
-            System.err.println("Total slot size: " + (newpos - position));
             return newpos - position;
         }
     },

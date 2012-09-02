@@ -12,21 +12,45 @@ import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
+import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 public class Main {
-    public static void main(String[] args) {
-        IoConnector connector = new NioSocketConnector();
 
-        connector.setHandler(new ClientHandler());
+    public static void main(String[] args) {
+        new Main().run();
+    }
+
+    public void run() {
+        final int port = 25565;
+        final String host = "localhost";
+
+        final NioSocketConnector connector = new NioSocketConnector();
+        SocketSessionConfig cfg = connector.getSessionConfig();
+        cfg.setTrafficClass(24); // IPTOS_THROUGHPUT & IPTOS_LOWDELAY
+
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+
+        ClientListener listener = new ClientListener() {
+            @Override()
+            public void onConnect(Client client) {
+
+            }
+
+            @Override()
+            public void onDisconnect(Client client) {
+                System.err.println("Client disconnected: " + client.getUser() + ". Reconnect");
+                Client reconnect = new Client(executor, client.getUser(), host, port);
+                reconnect.connect(connector);
+            }
+        };
+        connector.setHandler(new ClientHandler(listener));
 
         connector.getFilterChain().addLast("RequestProtocolCodec",
-            new ProtocolCodecFilter(new RequestProtocolEncoder(), new ResponseProtocolDecoder()));
+                                           new ProtocolCodecFilter(new RequestProtocolEncoder(), new ResponseProtocolDecoder()));
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-
-        for (int i = 0; i < 1; i++) {
-            Client client = new Client(executor, "__steve" + i, "localhost", 25565);
+        for (int i = 0; i < 50; i++) {
+            Client client = new Client(executor, "__steve" + i, host, port);
             client.connect(connector);
         }
 /*      connector.dispose();*/

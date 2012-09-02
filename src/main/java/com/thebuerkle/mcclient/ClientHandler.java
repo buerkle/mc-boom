@@ -12,21 +12,26 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 public class ClientHandler extends IoHandlerAdapter {
 
+    private final ClientListener _listener;
+
+    public ClientHandler(ClientListener listener) {
+        _listener = listener;
+    }
+
     @Override()
     public void sessionOpened(IoSession session) {
-        System.err.println("------ open");
-/*      Client client = client(session);*/
-/*      client.onConnect(session);      */
-/*          packethandshake handshake = new PacketHandshake(39, _user, _host, _port);*/
-/*          handshake.write(_buf);                                                   */
-/*          session.write(_buf);                                                     */
-
-
+        Client client = Client.get(session);
+        if (_listener != null) {
+            _listener.onConnect(client);
+        }
     }
 
     public void sessionClosed(IoSession session) throws Exception {
         Client client = Client.get(session);
         System.err.println("Session closed: " + client.getUser());
+        if (_listener != null) {
+            _listener.onDisconnect(client);
+        }
     }
 
     @Override()

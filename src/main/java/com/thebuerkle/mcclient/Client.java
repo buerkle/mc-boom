@@ -26,6 +26,7 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.session.IoSessionInitializer;
 
 public class Client {
 
@@ -84,7 +85,12 @@ public class Client {
             throw new IllegalStateException("Already connected. Disconnect first.");
         }
 
-        ConnectFuture future = connector.connect(new InetSocketAddress(_host, _port));
+        ConnectFuture future = connector.connect(new InetSocketAddress(_host, _port),
+                                                 new IoSessionInitializer<ConnectFuture>() {
+                                                     public void initializeSession(IoSession ios, ConnectFuture f) {
+                                                         ios.setAttribute(SESSION_KEY, Client.this);
+                                                     }
+                                                 });
         future.awaitUninterruptibly();
 
         if (!future.isConnected()) {
@@ -93,14 +99,9 @@ public class Client {
 
         session = future.getSession();
         session.getConfig().setUseReadOperation(false);
-        session.setAttribute(SESSION_KEY, this);
         session.write(new HandshakeRequest(39, _user, _host, _port));
 
         _session = session;
-
-        System.err.println("--- wait for close");
-/*      session.getCloseFuture().awaitUninterruptibly();*/
-
     }
 
     public void onMessageReceived(Response response) {
@@ -133,7 +134,7 @@ public class Client {
         else if (PlayerPositionAndLookResponse.ID == id) {
             final PlayerPositionAndLookResponse rsp = (PlayerPositionAndLookResponse) response;
 
-            System.err.println("Player position and look: " + rsp);
+/*          System.err.println("Player position and look: " + rsp);*/
 
             if (_running.compareAndSet(false, true)) {
                 _executor.execute(new Runnable() {
@@ -159,12 +160,13 @@ public class Client {
 
         }
         else if (DisconnectResponse.ID == id) {
-            System.err.println("Disconnected: " + ((DisconnectResponse) response).reason);
+            System.err.println("Disconnected: " + _user + ": " + ((DisconnectResponse) response).reason);
         }
     }
 
     public void disconnect() {
         _running.set(false);
+        _session.close(true);
     }
 
     private class TickRunnable implements Runnable {
