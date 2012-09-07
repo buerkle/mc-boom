@@ -22,6 +22,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(AnimationResponse.class);
         register(AttachEntityResponse.class);
         register(BlockBreakAnimationResponse.class);
+        register(BlockActionResponse.class);
         register(BlockChangeResponse.class);
         register(ChangeGameStateResponse.class);
         register(ChatMessageResponse.class);
