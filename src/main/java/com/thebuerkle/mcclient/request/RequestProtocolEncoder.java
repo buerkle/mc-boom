@@ -7,8 +7,6 @@ import org.apache.mina.filter.codec.ProtocolEncoderOutput;
 
 public class RequestProtocolEncoder implements ProtocolEncoder {
 
-    private static final String BUFFER_KEY = RequestProtocolEncoder.class.getName() + ".BUFFER";
-
     @Override()
     public void encode(IoSession session, Object message, ProtocolEncoderOutput out) throws Exception {
         if (message instanceof Request == false) {
@@ -16,24 +14,25 @@ public class RequestProtocolEncoder implements ProtocolEncoder {
         }
 
         Request request = (Request) message;
-        IoBuffer buf = (IoBuffer) session.getAttribute(BUFFER_KEY);
+        IoBuffer buf = IoBuffer.allocate(1+request.getSize());
 
-        if (buf == null) {
-            buf = IoBuffer.allocate(512);
-            buf.setAutoExpand(true);
-            session.setAttribute(BUFFER_KEY, buf);
-        }
-
-        buf.clear();
+        int p = buf.position();
+        int l = buf.limit();
         buf.put((byte) request.getId());
         request.write(buf);
         buf.flip();
+        if (buf.remaining() == 0) {
+            System.err.println("------  Request: " + request.getId());
+            System.err.println("------ Position: " + p);
+            System.err.println("------    Limit: " + l);
+            System.err.println("------New Position: " + buf.position());
+            System.err.println("------   New Limit: " + buf.limit());
+        }
         out.write(buf);
     }
 
     @Override()
     public void dispose(IoSession session) {
-        session.removeAttribute(BUFFER_KEY);
     }
 }
 

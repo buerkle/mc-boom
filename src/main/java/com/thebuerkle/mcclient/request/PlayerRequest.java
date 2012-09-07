@@ -15,6 +15,11 @@ public class PlayerRequest extends Request {
     }
 
     @Override()
+    public int getSize() {
+        return 1;
+    }
+
+    @Override()
     public void write(IoBuffer out) {
         mc_bool(out, _onGround);
     }

@@ -31,6 +31,11 @@ public class EncryptionKeyResponseRequest extends Request {
     }
 
     @Override()
+    public int getSize() {
+        return (2 + _secret.length) + (2 + _token.length);
+    }
+
+    @Override()
     public void write(IoBuffer out) {
         mc_bytearray_2(out, _secret);
         mc_bytearray_2(out, _token);

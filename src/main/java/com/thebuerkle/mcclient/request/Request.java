@@ -17,6 +17,8 @@ public abstract class Request {
 
     abstract void write(IoBuffer out);
 
+    abstract int getSize();
+
     public int getId() {
         return this.id;
     }

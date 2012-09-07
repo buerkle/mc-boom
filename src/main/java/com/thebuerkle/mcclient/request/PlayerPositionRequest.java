@@ -19,6 +19,11 @@ public class PlayerPositionRequest extends Request {
     }
 
     @Override()
+    public int getSize() {
+        return 33;
+    }
+
+    @Override()
     public void write(IoBuffer out) {
         mc_double(out, _position.x);
         mc_double(out, _position.y);

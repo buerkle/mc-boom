@@ -10,16 +10,6 @@ public class PlayerPositionAndLookRequest extends Request {
 
     public static final int ID = 0x0D;
 
-    private static final DataType[] ENCODING = new DataType[] {
-        DataType.mc_double,
-            DataType.mc_double,
-            DataType.mc_double,
-            DataType.mc_double,
-            DataType.mc_float,
-            DataType.mc_float,
-            DataType.mc_bool
-    };
-
     private final Vec3 _position;
     private final double _stance;
     private final float _yaw;
@@ -35,6 +25,11 @@ public class PlayerPositionAndLookRequest extends Request {
         _yaw = yaw;
         _pitch = pitch;
         _onGround = onGround;
+    }
+
+    @Override()
+    public int getSize() {
+        return 41;
     }
 
     @Override()

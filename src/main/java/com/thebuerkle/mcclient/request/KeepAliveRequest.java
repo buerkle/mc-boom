@@ -13,6 +13,11 @@ public class KeepAliveRequest extends Request {
     }
 
     @Override()
+    public int getSize() {
+        return 4;
+    }
+
+    @Override()
     public void write(IoBuffer out) {
         mc_int(out, _id);
     }

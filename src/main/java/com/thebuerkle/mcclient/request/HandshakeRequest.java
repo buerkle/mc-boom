@@ -18,6 +18,11 @@ public class HandshakeRequest extends Request {
     }
 
     @Override()
+    public int getSize() {
+        return 1 + (2 + this.username.length()*2) + (2+ this.host.length()*2) + 4;
+    }
+
+    @Override()
     public void write(IoBuffer out) {
         mc_byte(out, protocol);
         mc_string(out, username);
