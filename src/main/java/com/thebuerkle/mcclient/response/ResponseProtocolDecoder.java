@@ -32,6 +32,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(DisconnectResponse.class);
         register(EncryptionKeyRequestResponse.class);
         register(EncryptionKeyResponseResponse.class);
+        register(EntityEffectResponse.class);
         register(EntityEquipmentResponse.class);
         register(EntityResponse.class);
         register(EntityHeadLookResponse.class);
@@ -52,6 +53,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(PlayerAbilitiesResponse.class);
         register(PlayerListItemResponse.class);
         register(PlayerPositionAndLookResponse.class);
+        register(RemoveEntityEffectResponse.class);
         register(SetExperienceResponse.class);
         register(SetSlotResponse.class);
         register(SetWindowItemsResponse.class);
