@@ -15,8 +15,8 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
 
     private static final String STATE_KEY = ResponseProtocolDecoder.class.getName() + ".STATE";
 
-    private static final Constructor[] _responses = new Constructor[256];
-    private static final DataType[][] _encodings = new DataType[256][];
+    private static final Constructor[] RESPONSES = new Constructor[256];
+    private static final DataType[][] ENCODINGS = new DataType[256][];
 
     static {
         register(AnimationResponse.class);
@@ -75,8 +75,8 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         try {
             int id = response.getField("ID").getInt(null);
 
-            _responses[id] = response.getConstructor(IoBuffer.class);
-            _encodings[id] = (DataType[]) response.getField("ENCODING").get(null);
+            RESPONSES[id] = response.getConstructor(IoBuffer.class);
+            ENCODINGS[id] = (DataType[]) response.getField("ENCODING").get(null);
         }
         catch (Exception e) {
             throw new Error(e);
@@ -85,7 +85,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
 
     private static Response createResponse(int id, IoBuffer in) {
         try {
-            Constructor<? extends Response> response = _responses[id];
+            Constructor<? extends Response> response = RESPONSES[id];
             if (response == null) {
                 throw new NullPointerException("Unable to find response class for ID: " + Integer.toHexString(id));
             }
@@ -143,7 +143,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
                 state.id = in.getUnsigned();
             }
 
-            DataType[] encoding = _encodings[state.id];
+            DataType[] encoding = ENCODINGS[state.id];
 
             if (encoding == null) {
                 throw new NullPointerException("Unable to find response class for ID: " + Integer.toHexString(state.id));

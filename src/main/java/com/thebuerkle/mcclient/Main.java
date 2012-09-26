@@ -27,6 +27,8 @@ public class Main {
         new Main().run();
     }
 
+    private final ChunkManager _chunkManager = new ChunkManager();
+
     public void run() {
         final NioSocketConnector connector = new NioSocketConnector();
         SocketSessionConfig cfg = connector.getSessionConfig();
@@ -35,21 +37,24 @@ public class Main {
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
         ReconnectWorker reconnector = new ReconnectWorker(connector, executor);
-        reconnector.start();
+/*      reconnector.start();*/
 
         connector.setHandler(new ClientHandler(reconnector));
 
         connector.getFilterChain().addLast("RequestProtocolCodec",
                                            new ProtocolCodecFilter(new RequestProtocolEncoder(), new ResponseProtocolDecoder()));
 
-        for (int i = 0; i < 50; i++) {
-            Client client = new Client(executor, "__steve" + i, HOST, PORT);
+        ChunkManager chunkManager = new ChunkManager();
+        chunkManager.start();
+
+        for (int i = 0; i < 1; i++) {
+            Client client = new Client(executor, "__steve" + i, HOST, PORT, chunkManager);
             client.connect(connector);
         }
 /*      connector.dispose();*/
     }
 
-    private static class ReconnectWorker implements ClientListener, Runnable {
+    private class ReconnectWorker implements ClientListener, Runnable {
 
         private final IoConnector _connector;
         private final ScheduledExecutorService _executor;
@@ -83,7 +88,7 @@ public class Main {
                 while ((client = _reconnects.take()) != null) {
                     System.err.println("Reconnect: " + client.getUser());
 
-                    Client reconnect = new Client(_executor, client.getUser(), HOST, PORT);
+                    Client reconnect = new Client(_executor, client.getUser(), HOST, PORT, _chunkManager);
                     reconnect.connect(_connector);
                 }
             }

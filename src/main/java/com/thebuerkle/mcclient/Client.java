@@ -1,10 +1,16 @@
 package com.thebuerkle.mcclient;
 
+import com.thebuerkle.mcclient.ChunkManager.Callback;
+import com.thebuerkle.mcclient.model.Difficulty;
 import com.thebuerkle.mcclient.model.IntVec3;
 import com.thebuerkle.mcclient.model.Player;
 import com.thebuerkle.mcclient.model.Vec3;
+import com.thebuerkle.mcclient.model.ViewDistance;
 import com.thebuerkle.mcclient.request.*;
 import com.thebuerkle.mcclient.response.*;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
@@ -28,9 +34,32 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionInitializer;
 
-public class Client {
+public class Client implements ChunkManager.Callback {
 
     public static final String SESSION_KEY = Client.class.getName();
+
+    private static final Method[] HANDLERS = new Method[256];
+
+    static {
+        try {
+            for (Method method : Client.class.getDeclaredMethods()) {
+                Class<?>[] parms = method.getParameterTypes();
+
+                if (parms.length == 1
+                    && Response.class.isAssignableFrom(parms[0])
+                    && !"onMessageReceived".equals(method.getName())) {
+
+                    Class<?> response = parms[0];
+                    int id = response.getField("ID").getInt(null);
+
+                    HANDLERS[id] = method;
+                }
+            }
+        }
+        catch (Exception e) {
+            throw new Error(e);
+        }
+    }
 
     private static final int TICK_MS = 50;
 
@@ -53,13 +82,18 @@ public class Client {
 
     private final AtomicBoolean _running = new AtomicBoolean();
 
+    private final ChunkManager _chunkManager;
+
     private Player _player;
 
-    public Client(ScheduledExecutorService executor, String user, String host, int port) {
+    public Client(ScheduledExecutorService executor, String user, String host, int port,
+                  ChunkManager chunkManager) {
+
         _executor = executor;
         _user = user;
         _host = host;
         _port = port;
+        _chunkManager = chunkManager;
         _secret = secret();
     }
 
@@ -108,59 +142,18 @@ public class Client {
 /*      System.err.println("Response received: " + response.getClass().getSimpleName() + ": " + response);*/
         int id = response.getId();
 
-        if (EncryptionKeyRequestResponse.ID == id) {
-            EncryptionKeyRequestResponse rsp = (EncryptionKeyRequestResponse) response;
+        Method handler = HANDLERS[id];
 
-            _session.write(new EncryptionKeyResponseRequest(rsp.key, _secret, rsp.token));
-        }
-        else if (EncryptionKeyResponseResponse.ID == id) {
-            _session.getFilterChain().addFirst("encryption", new EncryptionFilter(_secret));
-
-            _session.write(new ClientStatusRequest(0));
-        }
-        else if (KeepAliveResponse.ID == id) {
-            _session.write(new KeepAliveRequest(((KeepAliveResponse) response).id));
-        }
-        else if (LoginRequestResponse.ID == id) {
-            final LoginRequestResponse login = (LoginRequestResponse) response;
-
-            _executor.submit(new Runnable() {
-                                 public void run() {
-                                     _player = new Player(login.eid);
-                                     System.err.println("Login: " + login.eid);
-                                 }
-                             });
-        }
-        else if (PlayerPositionAndLookResponse.ID == id) {
-            final PlayerPositionAndLookResponse rsp = (PlayerPositionAndLookResponse) response;
-
-/*          System.err.println("Player position and look: " + rsp);*/
-
-            if (_running.compareAndSet(false, true)) {
-                _executor.execute(new Runnable() {
-                                      public void run() {
-/*                                        System.err.println("---- set position: " + rsp.position*/
-/*                                             + ": " + rsp.onGround);                           */
-                                          _player.setPosition(rsp.position);
-
-                                          _executor.schedule(new TickRunnable(),
-                                                             TICK_MS,
-                                                             TimeUnit.MILLISECONDS);
-                                      }
-                                  });
+        if (handler != null) {
+            try {
+                handler.invoke(this, response);
             }
-            else {
-                _executor.execute(new Runnable() {
-                                      public void run() {
-                                          _player.setPosition(rsp.position);
-                                          _session.write(new PlayerPositionRequest(rsp.position, rsp.position.y + Player.HEIGHT, _player.isOnGround()));
-                                      }
-                                  });
+            catch (IllegalAccessException e) {
+                e.printStackTrace();
             }
-
-        }
-        else if (DisconnectResponse.ID == id) {
-            System.err.println("Disconnected: " + _user + ": " + ((DisconnectResponse) response).reason);
+            catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -169,7 +162,72 @@ public class Client {
         _session.close(true);
     }
 
-    private class TickRunnable implements Runnable {
+    @Override()
+    public void onChunkReady() {
+    }
+
+    // Received after client sends handshake to server
+    private void onEncryptionKeyRequestResponse(EncryptionKeyRequestResponse response) {
+        _session.write(new EncryptionKeyResponseRequest(response.key, _secret, response.token));
+    }
+
+    // Server has turned on encryption, we do the same
+    private void onEncryptionKeyResponseResponse(EncryptionKeyResponseResponse response) {
+        _session.getFilterChain().addFirst("encryption", new EncryptionFilter(_secret));
+        _session.write(new ClientStatusRequest(0));
+    }
+    private void onLoginRequestResponse(final LoginRequestResponse response) {
+        Runnable r = new Runnable() {
+            @Override()
+            public void run() {
+                System.err.println("Login request");
+                _player = new Player(response.eid);
+/*              _session.write(new ClientInfoRequest("en_US", ViewDistance.Far,*/
+/*                                                   0, Difficulty.Normal));   */
+            }
+        };
+        _executor.submit(r);
+    }
+
+    private void onKeepAliveResponse(KeepAliveResponse response) {
+        _session.write(new KeepAliveRequest(response.id));
+    }
+
+    private void onChatMessageResponse(ChatMessageResponse response) {
+        System.err.println("Chat: " + response.message);
+    }
+
+    private void onChunkDataResponse(ChunkDataResponse response) {
+/*      _chunkManager.submit(this, response);*/
+    }
+
+    private void onPlayerPositionAndLookResponse(final PlayerPositionAndLookResponse response) {
+        if (_running.compareAndSet(false, true)) {
+            _executor.execute(new Runnable() {
+                                  public void run() {
+                                      System.err.println("Start moving");
+/*                                        System.err.println("---- set position: " + rsp.position*/
+/*                                             + ": " + rsp.onGround);                           */
+                                      _player.setPosition(response.position);
+
+                                      _executor.schedule(new Ticker(),
+                                                         TICK_MS,
+                                                         TimeUnit.MILLISECONDS);
+                                  }
+                              });
+        }
+        else {
+            _executor.execute(new Runnable() {
+                                  public void run() {
+                                      _player.setPosition(response.position);
+                                      _session.write(new PlayerPositionRequest(response.position, response.position.y + Player.HEIGHT, _player.isOnGround()));
+                                  }
+                              });
+        }
+
+    }
+
+    private class Ticker implements Runnable {
         @Override()
         public void run() {
             Vec3 position = _player.getPosition();
