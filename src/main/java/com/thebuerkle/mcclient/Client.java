@@ -1,17 +1,18 @@
 package com.thebuerkle.mcclient;
 
 import com.thebuerkle.mcclient.ChunkManager.Callback;
+import com.thebuerkle.mcclient.model.Chunk;
 import com.thebuerkle.mcclient.model.Difficulty;
 import com.thebuerkle.mcclient.model.IntVec3;
 import com.thebuerkle.mcclient.model.Player;
 import com.thebuerkle.mcclient.model.Vec3;
 import com.thebuerkle.mcclient.model.ViewDistance;
+import com.thebuerkle.mcclient.model.World;
 import com.thebuerkle.mcclient.request.*;
 import com.thebuerkle.mcclient.response.*;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
@@ -163,7 +164,21 @@ public class Client implements ChunkManager.Callback {
     }
 
     @Override()
-    public void onChunkReady() {
+    public void onChunkLoad(final Chunk chunk) {
+        Runnable task = new Runnable() {
+            public void run() {
+                _player.getWorld().add(chunk);
+            }
+        };
+        _executor.submit(task);
+/*      int x = 275;                                                       */
+/*      int y = 3;                                                         */
+/*      int z = 1589;                                                      */
+/*      Vec3 p = _player.getPosition();                                    */
+/*                                                                         */
+/*      if (chunk.contains(x, y, z)) {                                     */
+/*          System.err.println("Found chunk: " + chunk.blockType(x, y, z));*/
+/*      }                                                                  */
     }
 
     // Received after client sends handshake to server
@@ -180,10 +195,9 @@ public class Client implements ChunkManager.Callback {
         Runnable r = new Runnable() {
             @Override()
             public void run() {
-                System.err.println("Login request");
                 _player = new Player(response.eid);
-/*              _session.write(new ClientInfoRequest("en_US", ViewDistance.Far,*/
-/*                                                   0, Difficulty.Normal));   */
+                _session.write(new ClientInfoRequest("en_US", ViewDistance.Far,
+                                                     0, Difficulty.Normal));
             }
         };
         _executor.submit(r);
@@ -193,19 +207,18 @@ public class Client implements ChunkManager.Callback {
         _session.write(new KeepAliveRequest(response.id));
     }
 
-    private void onChatMessageResponse(ChatMessageResponse response) {
-        System.err.println("Chat: " + response.message);
-    }
+/*  private void onChatMessageResponse(ChatMessageResponse response) {*/
+/*      System.err.println("Chat: " + response.message);              */
+/*  }                                                                 */
 
     private void onChunkDataResponse(ChunkDataResponse response) {
-/*      _chunkManager.submit(this, response);*/
+        _chunkManager.submit(this, response);
     }
 
     private void onPlayerPositionAndLookResponse(final PlayerPositionAndLookResponse response) {
         if (_running.compareAndSet(false, true)) {
             _executor.execute(new Runnable() {
                                   public void run() {
-                                      System.err.println("Start moving");
 /*                                        System.err.println("---- set position: " + rsp.position*/
 /*                                             + ": " + rsp.onGround);                           */
                                       _player.setPosition(response.position);
@@ -237,8 +250,8 @@ public class Client implements ChunkManager.Callback {
             double z = position.z;
 
             if (_player.isOnGround()) {
-                position.x += _random.nextDouble() - 0.5;
-                position.z += _random.nextDouble() - 0.5;
+/*              position.x += _random.nextDouble() - 0.99;*/
+/*              position.z += _random.nextDouble() - 0.99;*/
             }
             else {
                 velocityY -= 0.08;
@@ -258,9 +271,31 @@ public class Client implements ChunkManager.Callback {
 
             _session.write(new PlayerPositionRequest(position, position.y + Player.HEIGHT, _player.isOnGround()));
 
+            test();
+/*          System.err.println("Block: " + _player.getWorld().blockType(position));*/
             if (_running.get()) {
                 _executor.schedule(this, TICK_MS, TimeUnit.MILLISECONDS);
             }
+        }
+
+        public void test() {
+            int x = 275;
+            int y = 3;
+            int z = 1589;
+/*          Vec3 p = _player.getPosition();*/
+
+            World world = _player.getWorld();
+
+            System.err.println("Position: " + _player.getPosition());
+            int block = world.blockType(_player.getPosition());
+/*          int block = world.blockType(new Vec3(x, y, z));*/
+            if (block != -1) {
+                System.err.println("Block: " + block);
+            }
+/*          if (chunk.contains(x, y, z)) {                                     */
+/*              System.err.println("Found chunk: " + chunk.blockType(x, y, z));*/
+/*          }                                                                  */
+
         }
     }
 }

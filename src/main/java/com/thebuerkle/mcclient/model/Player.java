@@ -6,6 +6,8 @@ public class Player {
 
     private final int _id;
 
+    private final World _world;
+
     private Vec3 _position;
     private Vec3 _velocity = new Vec3();
     private boolean _onGround;
@@ -13,6 +15,11 @@ public class Player {
 
     public Player(int id) {
         _id = id;
+        _world = new World();
+    }
+
+    public World getWorld() {
+        return _world;
     }
 
     public int getId() {
