@@ -107,6 +107,29 @@ public enum DataType {
              }
              return 2 + (in.getShort(position) * 2);
          }
+    },
+
+    mc_chunk_bulk(-1) {
+        @Override()
+        public int size(IoBuffer in, int position) {
+            int remaining = in.limit() - position;
+
+            if (remaining < 6) {
+                return -1; // no room for chunk count and data length
+            }
+
+            int count = in.getShort(position);
+            int len = in.getInt(position+2);
+
+            if (remaining < 6 + len) {
+                return -1; // no room for compressed data chunk
+            }
+
+            if (remaining < 6 + len + 12 * count) {
+                return -1; // no room for chunk metadata
+            }
+            return 7 + len + 12 * count;
+        }
     };
 
     private final int _size;
@@ -121,4 +144,10 @@ public enum DataType {
     public int size(IoBuffer in, int position) {
         return _size;
     }
+
+//  protected int r(IoBuffer in, int position, int size) {
+//      if (in.limit() - position < size) {
+//          return -1;
+//      }
+//  }
 }

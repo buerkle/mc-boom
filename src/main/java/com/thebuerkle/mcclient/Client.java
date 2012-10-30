@@ -134,13 +134,13 @@ public class Client implements ChunkManager.Callback {
 
         session = future.getSession();
         session.getConfig().setUseReadOperation(false);
-        session.write(new HandshakeRequest(39, _user, _host, _port));
+        session.write(new HandshakeRequest(_user, _host, _port));
 
         _session = session;
     }
 
     public void onMessageReceived(Response response) {
-/*      System.err.println("Response received: " + response.getClass().getSimpleName() + ": " + response);*/
+        System.err.println("Response received: " + response.getClass().getSimpleName() + ": " + response);
         int id = response.getId();
 
         Method handler = HANDLERS[id];
@@ -159,8 +159,11 @@ public class Client implements ChunkManager.Callback {
     }
 
     public void disconnect() {
-        _running.set(false);
         _session.close(true);
+    }
+
+    public void onDisconnect() {
+        _running.set(false);
     }
 
     @Override()
@@ -197,7 +200,7 @@ public class Client implements ChunkManager.Callback {
             public void run() {
                 _player = new Player(response.eid);
                 _session.write(new ClientInfoRequest("en_US", ViewDistance.Far,
-                                                     0, Difficulty.Normal));
+                                                     0, Difficulty.Normal, true));
             }
         };
         _executor.submit(r);
@@ -250,8 +253,8 @@ public class Client implements ChunkManager.Callback {
             double z = position.z;
 
             if (_player.isOnGround()) {
-/*              position.x += _random.nextDouble() - 0.99;*/
-/*              position.z += _random.nextDouble() - 0.99;*/
+                position.x += _random.nextDouble() - 0.5;
+                position.z += _random.nextDouble() - 0.5;
             }
             else {
                 velocityY -= 0.08;
@@ -271,7 +274,7 @@ public class Client implements ChunkManager.Callback {
 
             _session.write(new PlayerPositionRequest(position, position.y + Player.HEIGHT, _player.isOnGround()));
 
-            test();
+//          test();
 /*          System.err.println("Block: " + _player.getWorld().blockType(position));*/
             if (_running.get()) {
                 _executor.schedule(this, TICK_MS, TimeUnit.MILLISECONDS);

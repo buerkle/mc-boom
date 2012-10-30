@@ -29,6 +29,7 @@ public class ClientHandler extends IoHandlerAdapter {
     public void sessionClosed(IoSession session) throws Exception {
         Client client = Client.get(session);
         System.err.println("Session closed: " + client.getUser());
+        client.onDisconnect();
         if (_listener != null) {
             _listener.onDisconnect(client);
         }

@@ -15,20 +15,22 @@ public class ClientInfoRequest extends Request {
     private final ViewDistance _distance;
     private final int _chat;
     private final Difficulty _difficulty;
+    private final boolean _showCape;
 
     public ClientInfoRequest(String locale, ViewDistance distance,
-                             int chat, Difficulty difficulty) {
+                             int chat, Difficulty difficulty, boolean showCape) {
         super(0xCC);
 
         _locale = locale;
         _distance = distance;
         _chat = chat;
         _difficulty = difficulty;
+        _showCape = showCape;
     }
 
     @Override()
     public int getSize() {
-        return(2 + _locale.length()*2) + 3;
+        return(2 + _locale.length()*2) + 4;
     }
 
     @Override()
@@ -37,6 +39,7 @@ public class ClientInfoRequest extends Request {
         mc_byte(out, _distance.getValue());
         mc_byte(out, _chat);
         mc_byte(out, _difficulty.getValue());
+        mc_bool(out, _showCape);
     }
 
     @Override()

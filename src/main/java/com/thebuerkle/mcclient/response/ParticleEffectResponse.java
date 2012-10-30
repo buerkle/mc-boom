@@ -15,17 +15,20 @@ public class ParticleEffectResponse extends Response {
         DataType.mc_int,
         DataType.mc_byte,
         DataType.mc_int,
-        DataType.mc_int
+        DataType.mc_int,
+        DataType.mc_bool
     };
 
     public final int id;
     public final IntVec3 position;
     public final int data;
+    public final boolean noVolumeDecrease;
 
     public ParticleEffectResponse(IoBuffer in) {
         this.id = mc_int(in);
         this.position = new IntVec3(mc_int(in), mc_byte(in), mc_int(in));
         this.data = mc_int(in);
+        this.noVolumeDecrease = mc_bool(in);
     }
 
     @Override()

@@ -14,10 +14,12 @@ public class TimeUpdateResponse extends Response {
         DataType.mc_long,
     };
 
-    public final long time;
+    public final long ageOfWorld;
+    public final long timeOfDay;
 
     public TimeUpdateResponse(IoBuffer in) {
-        time = mc_long(in);
+        ageOfWorld = mc_long(in);
+        timeOfDay = mc_long(in);
     }
 
     @Override()
@@ -28,7 +30,8 @@ public class TimeUpdateResponse extends Response {
     @Override()
     public String toString() {
         return Objects.toStringHelper(this).
-            add("Time", time).
+            add("Age of the world", ageOfWorld).
+            add("Time of day", timeOfDay).
             toString();
     }
 }

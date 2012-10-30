@@ -16,6 +16,8 @@ public class RequestProtocolEncoder implements ProtocolEncoder {
         Request request = (Request) message;
         IoBuffer buf = IoBuffer.allocate(1+request.getSize());
 
+//      System.err.println("Write request: " + request.getClass().getSimpleName() + ": " + request);
+
         int p = buf.position();
         int l = buf.limit();
         buf.put((byte) request.getId());

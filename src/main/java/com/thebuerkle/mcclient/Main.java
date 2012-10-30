@@ -21,7 +21,7 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 public class Main {
 
     private static final String HOST = "localhost";
-    private static final int PORT = 25565;
+    private static final int PORT = 25566;
 
     public static void main(String[] args) {
         new Main().run();

@@ -29,6 +29,12 @@ public abstract class Response {
         return in.getUnsigned();
     }
 
+    protected static byte[] mc_bytearray(IoBuffer in, int len) {
+        byte[] v = new byte[len];
+        in.get(v);
+        return v;
+    }
+
     protected static byte[] mc_bytearray_2(IoBuffer in) {
         int len = in.getUnsignedShort();
         byte[] v = new byte[len];

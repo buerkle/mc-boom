@@ -47,6 +47,7 @@ public class ResponseProtocolDecoder extends CumulativeProtocolDecoder {
         register(IncrementStatisticResponse.class);
         register(KeepAliveResponse.class);
         register(LoginRequestResponse.class);
+        register(MapChunkBulkResponse.class);
         register(MultiBlockChangeResponse.class);
         register(NamedSoundEffectResponse.class);
         register(ParticleEffectResponse.class);
