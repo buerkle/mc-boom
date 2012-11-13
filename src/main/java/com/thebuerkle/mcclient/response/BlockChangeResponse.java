@@ -18,12 +18,12 @@ public class BlockChangeResponse extends Response {
         DataType.mc_byte
     };
 
-    public final IntVec3 coord;
+    public final IntVec3 position;
     public final short type;
     public final int metadata;
 
     public BlockChangeResponse(IoBuffer in) {
-        this.coord = new IntVec3(mc_int(in), mc_byte(in), mc_int(in));
+        this.position = new IntVec3(mc_int(in), mc_byte(in), mc_int(in));
         this.type = mc_short(in);
         this.metadata = mc_byte(in);
     }
@@ -36,7 +36,7 @@ public class BlockChangeResponse extends Response {
     @Override()
     public String toString() {
         return Objects.toStringHelper(this).
-            add("Coordinate", coord).
+            add("Position", position).
             add("Type", type).
             add("Metadata", metadata).
             toString();

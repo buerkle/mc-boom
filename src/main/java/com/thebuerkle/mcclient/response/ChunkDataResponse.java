@@ -21,7 +21,7 @@ public class ChunkDataResponse extends Response {
 
     public final int x;
     public final int z;
-    public final boolean groundUp;
+    public final boolean continuous;
     public final short primaryBitMap;
     public final short addBitMap;
     public final byte[] chunk;
@@ -29,7 +29,7 @@ public class ChunkDataResponse extends Response {
     public ChunkDataResponse(IoBuffer in) {
         this.x = mc_int(in);
         this.z = mc_int(in);
-        this.groundUp = mc_bool(in);
+        this.continuous = mc_bool(in);
         this.primaryBitMap = mc_short(in);
         this.addBitMap = mc_short(in);
         this.chunk = mc_bytearray_4(in);
@@ -45,7 +45,7 @@ public class ChunkDataResponse extends Response {
         return Objects.toStringHelper(this).
             add("X", x).
             add("Z", z).
-            add("Ground-up", groundUp).
+            add("Continuous", continuous).
             add("Primary bitmap", primaryBitMap).
             add("Add bitmap", addBitMap).
             add("Length", chunk.length).

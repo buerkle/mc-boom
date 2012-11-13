@@ -9,55 +9,58 @@ public class World {
         return key(position.x, position.z);
     }
 
+    private static long key(Chunk chunk) {
+        return key(chunk.getX(), chunk.getZ());
+    }
+
     private static long key(int x, int z) {
-        return (x << 32) | (z & 0XFFFFFFFFL);
+        return ((long) x << 32) | (z & 0XFFFFFFFFL);
     }
 
     private static long fromWorldToKey(int x, int z) {
         return key(x - (x % 16), z - (z % 16));
     }
 
-    private final TLongObjectHashMap<Region> _regions = new TLongObjectHashMap<Region>();
+    private final TLongObjectHashMap<Chunk> _chunks = new TLongObjectHashMap<Chunk>();
 
     public void add(Chunk chunk) {
-        IntVec3 position = chunk.getPosition();
-        long key = key(position);
-        Region region = _regions.get(key);
-
-        if (region == null) {
-            region = new Region(position);
-            _regions.put(key, region);
-
-            System.err.println("Add region: " + region);
-        }
-        region.add(chunk);
+        _chunks.put(key(chunk), chunk);
     }
 
     public void remove(Chunk chunk) {
+        _chunks.remove(key(chunk));
+    }
+
+    public void blockChange(IntVec3 position, int type, int metadata) {
+        Section section = fromWorld(position.x, position.y, position.z);
+        if (section != null) {
+            section.blockChange(position, type, metadata);
+        }
+    }
+
+    public int blockType(double x, double y, double z) {
+        int ix = (int) x;
+        int iy = (int) y;
+        int iz = (int) z;
+        Section section = fromWorld(ix, iy, iz);
+        if (section != null) {
+            return section.blockType(ix, iy, iz);
+        }
+        return -1;
     }
 
     public int blockType(Vec3 position) {
-        int x = (int) position.x;
-        int y = (int) position.y;
-        int z = (int) position.z;
-
-        Chunk chunk = fromWorld(x, y, z);
-        if (chunk != null) {
-            System.err.println("Found chunk: " + chunk);
-            return chunk.blockType(x, y, z);
-        }
-        return -1;
+        return blockType(position.x, position.y, position.z);
     }
 
     private int toRegionCoord(int value) {
         return value - (value % 16);
     }
 
-    private Chunk fromWorld(int x, int y, int z) {
-        Region region = _regions.get(fromWorldToKey(x, z));
-        if (region != null) {
-            System.err.println("Found region: " + x + ", " + z);
-            return region.get(y);
+    private Section fromWorld(int x, int y, int z) {
+        Chunk chunk = _chunks.get(fromWorldToKey(x, z));
+        if (chunk != null) {
+            return chunk.get(y);
         }
         return null;
     }

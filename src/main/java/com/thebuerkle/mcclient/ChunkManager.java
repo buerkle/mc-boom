@@ -1,9 +1,14 @@
 package com.thebuerkle.mcclient;
 
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
+
 import com.thebuerkle.mcclient.model.Chunk;
 import com.thebuerkle.mcclient.model.IntVec3;
+import com.thebuerkle.mcclient.model.Region;
+import com.thebuerkle.mcclient.model.Section;
 import com.thebuerkle.mcclient.response.ChunkDataResponse;
+import com.thebuerkle.mcclient.response.MapChunkBulkResponse;
+import com.thebuerkle.mcclient.response.Response;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -32,6 +37,14 @@ public class ChunkManager extends AbstractExecutionThreadService {
     private final Inflater _inflater = new Inflater();
 
     public void submit(Callback callback, ChunkDataResponse response) {
+        enqueue(callback, response);
+    }
+
+    public void submit(Callback callback, MapChunkBulkResponse response) {
+        enqueue(callback, response);
+    }
+
+    private void enqueue(Callback callback, Response response) {
         if (!isRunning()) {
             return;
         }
@@ -55,41 +68,48 @@ public class ChunkManager extends AbstractExecutionThreadService {
 
         try {
             while ((item = _queue.take()) != STOP) {
-                ChunkDataResponse response = item.response;
-                int sections = 0;
-                int size = Integer.bitCount(response.primaryBitMap) * SECTION_SIZE;
+                Response rsp = item.response;
 
-                if (response.groundUp) {
-                    size += BIOME_SIZE;
-                }
+                if (rsp instanceof ChunkDataResponse) {
+                    ChunkDataResponse response = (ChunkDataResponse) rsp;
+                    int size = Integer.bitCount(response.primaryBitMap) * SECTION_SIZE;
 
-                byte[] data = new byte[size];
+                    if (response.continuous) {
+                        size += BIOME_SIZE;
+                    }
 
-                _inflater.reset();
-                _inflater.setInput(response.chunk);
-                int result = _inflater.inflate(data);
+                    byte[] data = new byte[size];
 
-                int x = response.x * 16;
-                int z = response.z * 16;
-                int offset = 0;
+                    _inflater.reset();
+                    _inflater.setInput(response.chunk);
+                    int result = _inflater.inflate(data);
 
-                for (int y = 0; y < 16; y++) {
-                    IntVec3 position = new IntVec3(x, y * 16, z);
+                    int x = response.x * Chunk.LENGTH;
+                    int z = response.z * Chunk.LENGTH;
+                    int offset = 0;
 
-                    if ((response.primaryBitMap & (1 << y)) != 0) {
-                        boolean addData = ((response.addBitMap & (1 << y)) != 0);
-                        boolean biome = response.groundUp;
+                    // Loop over each section in this chunk
+                    Section[] sections = new Section[Chunk.NUM_SECTIONS];
+                    for (int y = 0; y < Chunk.NUM_SECTIONS; y++) {
+                        IntVec3 position = new IntVec3(x, y * Chunk.LENGTH, z);
 
-                        if (response.primaryBitMap > 1) {
-                            System.err.println("offset: " + offset);
-                        }
-                        item.callback.onChunkLoad(new Chunk(position, offset, data, addData, biome));
+                        if ((response.primaryBitMap & (1 << y)) != 0) {
+                            boolean addData = ((response.addBitMap & (1 << y)) != 0);
+                            boolean biome = response.continuous;
 
-                        offset += BLOCK_DATA_SIZE;
-                        if (biome && y == 0) {
+//                          if (response.primaryBitMap > 1) {
+//                              System.err.println("offset: " + offset);
+//                          }
+                            sections[y] = new Section(position, offset, data, addData, biome);
+
+                            offset += Section.NUM_BLOCKS;
+                            if (biome && y == 0) {
 /*                          offset += BIOME_SIZE;*/
+                            }
                         }
                     }
+
+                    item.callback.onChunkLoad(new Chunk(x, z, sections));
                 }
 
 /*              System.err.println(response.x * 16 + ", " + response.z * 16);*/
@@ -111,10 +131,10 @@ public class ChunkManager extends AbstractExecutionThreadService {
     }
 
     private static class Item {
-        public final ChunkDataResponse response;
+        public final Response response;
         public final Callback callback;
 
-        public Item(Callback callback, ChunkDataResponse response) {
+        public Item(Callback callback, Response response) {
             this.callback = callback;
             this.response = response;
         }

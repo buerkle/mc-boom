@@ -2,7 +2,9 @@ package com.thebuerkle.mcclient.model;
 
 public class Player {
 
-    public static final double HEIGHT = 1.62;
+    public static final double EYE_LEVEL = 1.62;
+    public static final double HEIGHT = 1.74;
+    public static final double WIDTH = 0.6;
 
     private final int _id;
 

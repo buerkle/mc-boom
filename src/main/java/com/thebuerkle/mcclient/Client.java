@@ -140,7 +140,8 @@ public class Client implements ChunkManager.Callback {
     }
 
     public void onMessageReceived(Response response) {
-        System.err.println("Response received: " + response.getClass().getSimpleName() + ": " + response);
+//      System.err.println("Response received: " + response.getClass().getSimpleName() + ": " + response);
+
         int id = response.getId();
 
         Method handler = HANDLERS[id];
@@ -173,6 +174,7 @@ public class Client implements ChunkManager.Callback {
                 _player.getWorld().add(chunk);
             }
         };
+//      System.err.println("chunk: "+ chunk.getX() + ", " + chunk.getZ());
         _executor.submit(task);
 /*      int x = 275;                                                       */
 /*      int y = 3;                                                         */
@@ -210,20 +212,53 @@ public class Client implements ChunkManager.Callback {
         _session.write(new KeepAliveRequest(response.id));
     }
 
-/*  private void onChatMessageResponse(ChatMessageResponse response) {*/
-/*      System.err.println("Chat: " + response.message);              */
-/*  }                                                                 */
+    private void onChatMessageResponse(ChatMessageResponse response) {
+        Runnable task = new Runnable() {
+            public void run() {
+                World world = _player.getWorld();
+                Vec3 position = _player.getPosition();
+                Vec3 under = new Vec3(position.x, position.y-1, position.z);
+                System.err.println("Position: " + _player.getPosition() + " -> " + under);
+                int block = world.blockType(under);
+                /*          int block = world.blockType(new Vec3(x, y, z));*/
+                if (block != -1) {
+                    System.err.println("Block: " + block);
+                }
+            }
+        };
+        String msg = response.message;
+        System.err.println(msg);
+        if (msg.contains("position")) {
+            _executor.submit(task);
+        }
+    }
+
+    private void onBlockChangeResponse(final BlockChangeResponse response) {
+        Runnable task = new Runnable() {
+            public void run() {
+                _player.getWorld().blockChange(response.position, response.type, response.metadata);
+            }
+        };
+        _executor.submit(task);
+    }
 
     private void onChunkDataResponse(ChunkDataResponse response) {
+//      System.err.println("chunk response: " + response);
+        _chunkManager.submit(this, response);
+    }
+
+    private void onMapChunkBulkResponse(MapChunkBulkResponse response) {
+        System.err.println("bulk response: " + response);
         _chunkManager.submit(this, response);
     }
 
     private void onPlayerPositionAndLookResponse(final PlayerPositionAndLookResponse response) {
+        System.err.println("---- set position: " + response.position
+                           + ": " + response.onGround
+                           + ": " + response.stance);
         if (_running.compareAndSet(false, true)) {
             _executor.execute(new Runnable() {
                                   public void run() {
-/*                                        System.err.println("---- set position: " + rsp.position*/
-/*                                             + ": " + rsp.onGround);                           */
                                       _player.setPosition(response.position);
 
                                       _executor.schedule(new Ticker(),
@@ -240,40 +275,67 @@ public class Client implements ChunkManager.Callback {
                                   }
                               });
         }
+    }
 
+    private void onDisconnectResponse(DisconnectResponse response) {
+        System.err.println("Server disconnect: " + response);
     }
 
     private class Ticker implements Runnable {
         @Override()
         public void run() {
+            try {
+                runInternal();
+            }
+            catch (RuntimeException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        private void runInternal() {
             Vec3 position = _player.getPosition();
             double velocityY = _player.getVelocityY();
             double y = position.y;
             double x = position.x;
             double z = position.z;
+            World world = _player.getWorld();
 
             if (_player.isOnGround()) {
-                position.x += _random.nextDouble() - 0.5;
-                position.z += _random.nextDouble() - 0.5;
+//              position.x += _random.nextDouble() - 0.5;
+//              position.z += Math.abs(_random.nextDouble() - 0.5);
+//              System.err.println("on ground");
             }
             else {
                 velocityY -= 0.08;
                 velocityY *= 0.98;
 
-                y = position.y + velocityY;
+                //y = position.y + velocityY;
 
-                // Works only for flat world until chunk data is parsed
-                if (y < 4.0) {
-                    y = 4.0;
-                    velocityY = 0.0;
+                int block = world.blockType(position.x, position.y-1, position.z);
+                System.err.println("block: " + block);
+                if (block == 0) {
+                    position.y += velocityY;
+                    System.err.println("----- Set position: " + position);
+                    _player.setPosition(position);
+                }
+                else if (block != -1) {
                     _player.setOnGround(true);
                 }
-                _player.setVelocityY(velocityY);
-                _player.setPosition(position.x, y, position.z);
+                // Works only for flat world until chunk data is parsed
+//              if (y < 4.0) {
+//                  y = 4.0;
+//                  velocityY = 0.0;
+//                  _player.setOnGround(true);
+//              }
+//              _player.setVelocityY(velocityY);
+//              _player.setPosition(position.x, y, position.z);
             }
 
-            _session.write(new PlayerPositionRequest(position, position.y + Player.HEIGHT, _player.isOnGround()));
+//          System.err.println("Player position: " + position);
+            _session.write(new PlayerPositionRequest(position, position.y + Player.EYE_LEVEL, _player.isOnGround()));
 
+//          System.err.println("running: " + _running.get());
 //          test();
 /*          System.err.println("Block: " + _player.getWorld().blockType(position));*/
             if (_running.get()) {
@@ -282,15 +344,16 @@ public class Client implements ChunkManager.Callback {
         }
 
         public void test() {
-            int x = 275;
-            int y = 3;
-            int z = 1589;
+//          int x = 275;
+//          int y = 3;
+//          int z = 1589;
 /*          Vec3 p = _player.getPosition();*/
 
             World world = _player.getWorld();
-
+            Vec3 position = _player.getPosition();
+            Vec3 under = new Vec3(position.x, position.y-1, position.z);
             System.err.println("Position: " + _player.getPosition());
-            int block = world.blockType(_player.getPosition());
+            int block = world.blockType(under);
 /*          int block = world.blockType(new Vec3(x, y, z));*/
             if (block != -1) {
                 System.err.println("Block: " + block);

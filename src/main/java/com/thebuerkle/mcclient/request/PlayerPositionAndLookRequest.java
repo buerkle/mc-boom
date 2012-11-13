@@ -43,7 +43,6 @@ public class PlayerPositionAndLookRequest extends Request {
         mc_bool(out, _onGround);
     }
 
-
     @Override()
     public int getId() {
         return ID;

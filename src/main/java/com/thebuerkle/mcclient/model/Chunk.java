@@ -1,38 +1,66 @@
 package com.thebuerkle.mcclient.model;
 
+import com.google.common.base.Objects;
+
 public class Chunk {
-    private final IntVec3 _position;
-    private final int _offset;
-    private final byte[] _data;
-    private final boolean _addData;
-    private final boolean _biome;
+    public final static int WIDTH = 16;
+    public final static int LENGTH = 16;
+    public final static int HEIGHT = 256;
 
-    public Chunk(IntVec3 position, int offset, byte[] data, boolean addData, boolean biome) {
-        _position = position;
-        _offset = offset;
-        _data = data;
-        _addData = addData;
-        _biome = biome;
+    public final static int NUM_BLOCKS = LENGTH * LENGTH * HEIGHT;
+
+    public final static int NUM_SECTIONS = 16;
+
+    private final int _x;
+    private final int _z;
+
+    private final Section[] _sections;
+
+    public Chunk(int x, int z, Section[] sections) {
+        _x = x;
+        _z = z;
+        _sections = sections;
     }
 
-    public IntVec3 getPosition() {
-        return _position;
+    public int getX() {
+        return _x;
     }
 
-    public boolean contains(int x, int y, int z) {
-        return(x >= _position.x && x < _position.x + 16
-               && y >= _position.y && y < _position.y + 16
-               && z >= _position.z && z < _position.z + 16);
+    public int getZ() {
+        return _z;
     }
 
-    public int blockType(int x, int y, int z) {
-        int cx = x % 16;
-        int cy = y % 16;
-        int cz = z % 16;
-        return _data[indexOf(cx, cy, cz) + _offset];
+    public Section get(int y) {
+        return _sections[y / 16];
     }
 
-    public int indexOf(int cx, int cy, int cz) {
-        return cx + (cz * 16) + (cy * 16 * 16);
+    public void add(Section section) {
+        _sections[section.getPosition().y / 16] = section;
+    }
+
+    public void remove(Section section) {
+        _sections[section.getPosition().y / 16] = null;
+    }
+
+    @Override()
+    public boolean equals(Object o) {
+        if (o instanceof Chunk) {
+            Chunk r = (Chunk) o;
+            return _x == r._x && _z == r._z;
+        }
+        return false;
+    }
+
+    @Override()
+    public int hashCode() {
+        return 31 * (31 + _x) + _z;
+    }
+
+    @Override()
+    public String toString() {
+        return Objects.toStringHelper(this).
+            add("X", _x).
+            add("Z", _z).
+            toString();
     }
 }
