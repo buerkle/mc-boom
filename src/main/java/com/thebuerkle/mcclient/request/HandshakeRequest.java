@@ -22,7 +22,7 @@ public class HandshakeRequest extends Request {
 
     @Override()
     public void write(IoBuffer out) {
-        mc_byte(out, 47); // 1.4 protocol version
+        mc_byte(out, 49); // 1.4.4 protocol version
         mc_string(out, username);
         mc_string(out, host);
         mc_int(out, port);
