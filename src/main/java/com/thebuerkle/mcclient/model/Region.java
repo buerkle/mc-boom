@@ -29,11 +29,11 @@ public class Region {
     }
 
     public void add(Chunk chunk) {
-        _chunks[chunk.getPosition().y / 16] = chunk;
+//      _chunks[chunk.getPosition().y / 16] = chunk;
     }
 
     public void remove(Chunk chunk) {
-        _chunks[chunk.getPosition().y / 16] = null;
+//      _chunks[chunk.getPosition().y / 16] = null;
     }
 
     @Override()
