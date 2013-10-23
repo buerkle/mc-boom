@@ -1,5 +1,9 @@
 apply plugin: 'application'
 apply plugin: 'java'
+apply plugin: 'maven'
+
+group = "com.thebuerkle"
+version = "0.1-SNAPSHOT"
 
 mainClassName = "com.thebuerkle.mcboom.Main"
 
