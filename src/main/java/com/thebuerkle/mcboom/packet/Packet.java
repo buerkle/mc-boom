@@ -43,6 +43,7 @@ public abstract class Packet {
     public static final int REMOVE_ENTITY_EFFECT = 0x2A;
     public static final int SET_EXPERIENCE = 0x2B;
     public static final int ENTITY_PROPERTIES = 0x2C;
+    public static final int CHUNK_DATA = 0x33;
     public static final int MULTI_BLOCK_CHANGE = 0x34;
     public static final int BLOCK_CHANGE = 0x35;
     public static final int BLOCK_ACTION = 0x36;

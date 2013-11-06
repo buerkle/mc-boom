@@ -49,8 +49,11 @@ public class ClientHandler extends SimpleChannelUpstreamHandler {
 /*      System.err.println("Received: " + e.getMessage());*/
 
         switch (packet.id) {
+            case Packet.CHUNK_DATA:
+            System.err.println("Received chunk data: " + packet);
+            break;
         case Packet.ENCRYPTION_KEY_REQUEST:
-            _channel.write(new ClientStatusPacket(0));
+            _channel.write(ClientStatusPacket.spawn());
             break;
         case Packet.LOGIN_REQUEST:
             _executor.scheduleAtFixedRate(new Tick(), 100, 50, TimeUnit.MILLISECONDS);

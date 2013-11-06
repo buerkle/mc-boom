@@ -11,7 +11,15 @@ public class ClientStatusPacket extends Packet {
 
     private final int _status;
 
-    public ClientStatusPacket(int status) {
+    public ClientStatusPacket spawn() {
+        return new ClientStatusPacket(0);
+    }
+
+    public ClientStatusPacket respawn() {
+        return new ClientStatusPacket(1);
+    }
+
+    private ClientStatusPacket(int status) {
         super(ID);
 
         _status = status;
