@@ -11,11 +11,11 @@ public class ClientStatusPacket extends Packet {
 
     private final int _status;
 
-    public ClientStatusPacket spawn() {
+    public static ClientStatusPacket spawn() {
         return new ClientStatusPacket(0);
     }
 
-    public ClientStatusPacket respawn() {
+    public static ClientStatusPacket respawn() {
         return new ClientStatusPacket(1);
     }
 
