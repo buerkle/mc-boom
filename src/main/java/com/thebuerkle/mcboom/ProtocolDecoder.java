@@ -23,16 +23,12 @@ public class ProtocolDecoder extends FrameDecoder  {
         register(BlockChangePacket.class);
         register(ChangeGameStatePacket.class);
         register(ChatMessagePacket.class);
-/*      register(ChunkDataPacket.class);                */
         register(CollectItemPacket.class);
         register(DestroyEntityPacket.class);
-/*      register(DisconnectPacket.class);               */
         register(EffectPacket.class);
         register(EncryptionKeyRequestPacket.class);
-/*      register(EncryptionKeyPacketPacket.class);      */
         register(EntityEffectPacket.class);
         register(EntityEquipmentPacket.class);
-/*      register(EntityPacket.class);                   */
         register(EntityHeadLookPacket.class);
         register(EntityLookAndMovePacket.class);
         register(EntityLookPacket.class);
@@ -45,7 +41,6 @@ public class ProtocolDecoder extends FrameDecoder  {
         register(ExplosionPacket.class);
         register(HeldItemChangePacket.class);
         register(ItemDataPacket.class);
-/*      register(IncrementStatisticPacket.class);*/
         register(KeepAlivePacket.class);
         register(KickPacket.class);
         register(LoginRequestPacket.class);
@@ -61,7 +56,6 @@ public class ProtocolDecoder extends FrameDecoder  {
         register(SetExperiencePacket.class);
         register(SetSlotPacket.class);
         register(SetWindowItemsPacket.class);
-/*      register(SpawnDroppedItemPacket.class);         */
         register(SpawnExperienceOrbPacket.class);
         register(SpawnGlobalEntityPacket.class);
         register(SpawnMobPacket.class);
@@ -69,7 +63,6 @@ public class ProtocolDecoder extends FrameDecoder  {
         register(SpawnObjectPacket.class);
         register(SpawnPaintingPacket.class);
         register(SpawnPositionPacket.class);
-/*      register(ThunderboltPacket.class);              */
         register(TimeUpdatePacket.class);
         register(UpdateHealthPacket.class);
         register(UpdateSignPacket.class);
@@ -93,13 +86,21 @@ public class ProtocolDecoder extends FrameDecoder  {
         try {
             Constructor<? extends Packet> packet = _packets[id];
             if (packet == null) {
-                throw new NullPointerException("Unable to find packet class for ID: " + Integer.toHexString(id));
+                throw new NullPointerException("Unable to find packet class for ID: " + toString(id));
             }
             return (Packet) packet.newInstance(in);
         }
         catch (Exception e) {
-            throw new IllegalStateException("Unable to find packet for ID: " + Integer.toHexString(id), e);
+            throw new IllegalStateException("Unable to find packet for ID: " + toString(id), e);
         }
+    }
+
+    private static String toString(int id) {
+        String hex = Integer.toHexString(id);
+        if (hex.length() == 1) {
+            hex = "0" + hex;
+        }
+        return "0x" + hex + " (" + id + ")";
     }
 
     // current packet we are decoding
@@ -114,62 +115,28 @@ public class ProtocolDecoder extends FrameDecoder  {
                 _id = buffer.readUnsignedByte();
             }
 
-/*          System.err.println();                                                                */
-/*          System.err.println("Packet to decode: " + _id + " -> 0x" + Integer.toHexString(_id));*/
-
             DataType[] encoding = _encodings[_id];
 
             if (encoding == null) {
-                throw new NullPointerException("Unable to find response class for ID: 0x" + Integer.toHexString(_id));
+                throw new NullPointerException("Unable to find response class for ID: " + toString(_id));
             }
 
             int position = buffer.readerIndex();
-/*          if (_id == Packet.ENTITY_METADATA) {                                              */
-/*              System.err.println("Position: " + position + " -> " + buffer.readableBytes());*/
-/*          }                                                                                 */
             for (int i = 0; i < encoding.length; i++) {
                 DataType dt = encoding[i];
                 int size = dt.size(buffer, position);
-
-/*              if (_id == Packet.ENTITY_METADATA) {                  */
-/*                  System.err.println("size: " + dt + " -> " + size);*/
-/*              }                                                     */
                 if (size == -1) {
                     return null;
                 }
                 position += size;
             }
 
-/*          if (_id == Packet.ENTITY_METADATA) {*/
-/*                                              */
-/*          System.err.println("Readable: reader index = " + buffer.readerIndex()*/
-/*              + "; position = " + position                                     */
-/*              + "; readable = " + buffer.readableBytes()                       */
-/*              + "; packet size = " + (position - buffer.readerIndex()));       */
-/*          }                                                                    */
+            // ensure buffer has enough data for packet
             if (position - buffer.readerIndex() > buffer.readableBytes()) {
-                System.err.println("Bad position");
                 return null;
             }
 
-/*          System.err.println("------ Size required: id: " + Integer.toHexString(state.id)*/
-/*              + " position:" + in.position()                                             */
-/*              + " new position:" + position                                              */
-/*              + " limit:" + in.limit()                                                   */
-/*              + " size: " + (position - in.position()));                                 */
-
-
-            try {
             result = createPacket(_id, buffer);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-
-            if (_id == Packet.TEAMS) {
-                System.err.println("Packet: " + result);
-            }
             _id = -1;
         }
         return result;
